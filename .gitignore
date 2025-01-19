@@ -1,0 +1,13 @@
+# Ignore Maven 'target' build artifacts
+target/
+
+# Keep the Maven wrapper JAR in version control
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+
