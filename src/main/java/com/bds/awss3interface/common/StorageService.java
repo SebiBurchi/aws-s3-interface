@@ -2,6 +2,7 @@ package com.bds.awss3interface.common;
 
 import com.bds.awss3interface.model.ListResult;
 import com.bds.awss3interface.model.Resource;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 
@@ -30,4 +31,13 @@ public interface StorageService {
      * @return A File containing the downloaded contents.
      */
     File getAsFile(Resource resource);
+
+
+    /**
+     * Uploads a file to S3/MinIO at the given key.
+     *
+     * @param key  the S3 object key (e.g. "uploads/file.txt")
+     * @param file the multipart file received from the client
+     */
+    void uploadFile(String key, MultipartFile file);
 }
