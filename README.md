@@ -20,6 +20,7 @@ To get started with the application, follow these steps:
 
 ## Makefile Commands
 The following commands are available in the included `Makefile` for automating common tasks:
+- `make all`: Builds the application, starts supporting services (e.g., MinIO), and runs the application in the `dev` profile.
 - `make build`: Cleans and packages the application into a JAR file.
 - `make test`: Runs all unit and integration tests.
 - `make run`: Starts the application locally using the generated JAR file.

@@ -1,12 +1,11 @@
-# Use bash for shell features if needed
 SHELL := /bin/bash
 
-# Declare these targets phony (they don't produce real files)
-.PHONY: build test run run-dev run-prod docker-up docker-down clean help
+.PHONY: all build test run run-dev run-prod docker-up docker-down clean help api-docs
 
 # Help menu to guide the client on how to use this Makefile
 help:
 	@echo "Usage:"
+	@echo "  make all            - Build, start services, and run the application"
 	@echo "  make build          - Build the Spring Boot application"
 	@echo "  make test           - Run tests"
 	@echo "  make run-dev        - Run the application with the 'dev' profile"
@@ -15,6 +14,10 @@ help:
 	@echo "  make docker-down    - Stop supporting services"
 	@echo "  make clean          - Clean up build artifacts"
 	@echo "  make api-docs       - Print example API calls for testing"
+
+# 0) Run everything to get the app fully operational
+all: build docker-up run-dev
+	@echo "Application is fully operational!"
 
 # 1) Build the Spring Boot application using Maven
 build:
@@ -25,7 +28,7 @@ build:
 # 2) Run tests
 test:
 	@echo "Running tests..."
-	mvn test
+	mvn test -Dspring.config.location=src/test/resources/application-test.properties
 	@echo "All tests completed successfully."
 
 # 3) Run the Spring Boot application locally (dev profile by default)
