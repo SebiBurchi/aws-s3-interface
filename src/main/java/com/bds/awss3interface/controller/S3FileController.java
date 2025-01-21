@@ -1,6 +1,7 @@
 package com.bds.awss3interface.controller;
 
 import com.bds.awss3interface.common.StorageService;
+import com.bds.awss3interface.exception.S3StorageException;
 import com.bds.awss3interface.model.ListResult;
 import com.bds.awss3interface.model.Resource;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.util.Map;
 
 /**
  * Controller exposing endpoints for AWS S3 file and folder operations.
@@ -37,14 +40,13 @@ public class S3FileController {
 
     /**
      * Lists the contents of a specific folder.
-     * Folder keys containing slashes must be URL-encoded (e.g., "images/" -> "images%2F").
      *
      * @param folderId The ID (S3 key) of the folder to list.
      * @param cursor   Optional pagination token to retrieve the next set of results.
      * @return A {@link ListResult} containing the folder contents and a continuation token for pagination.
      */
     @GetMapping("/list/folder")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @Operation(summary = "List folder contents", security = @SecurityRequirement(name = "basicAuth"))
     public ListResult<Resource> listFolder(
             @RequestParam @Parameter(description = "The S3 key of the folder to list") String folderId,
@@ -70,28 +72,44 @@ public class S3FileController {
     }
 
     /**
-     * Downloads a file and returns it as an attachment.
+     * Downloads a file and returns it as an attachment or an error response.
      *
      * @param id The S3 key of the file to download.
-     * @return A {@link ResponseEntity} containing the file as an attachment.
+     * @return A {@link ResponseEntity} containing the file as an attachment or an error response.
      */
-    @GetMapping(value = "/download", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @GetMapping("/download")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @Operation(summary = "Download a file", security = @SecurityRequirement(name = "basicAuth"))
-    public ResponseEntity<FileSystemResource> downloadFile(
+    public ResponseEntity<?> downloadFile(
             @RequestParam @Parameter(description = "The S3 key of the file to download") String id) {
         logger.info("Downloading file with key: {}", id);
 
-        Resource resource = s3StorageService.getResource(id);
-        File file = s3StorageService.getAsFile(resource);
-        FileSystemResource fsResource = new FileSystemResource(file);
+        try {
+            Resource resource = s3StorageService.getResource(id);
+            File file = s3StorageService.getAsFile(resource);
+            FileSystemResource fsResource = new FileSystemResource(file);
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getName() + "\"")
-                .contentLength(file.length())
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(fsResource);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getName() + "\"")
+                    .contentLength(file.length())
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(fsResource);
+
+        } catch (S3StorageException e) {
+            logger.error("Error during file download: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "File not found or cannot be downloaded", "details", e.getMessage()));
+        } catch (UnsupportedOperationException e) {
+            logger.error("Operation not supported: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Operation not supported", "details", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Unexpected error during file download: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Internal server error", "details", e.getMessage()));
+        }
     }
+
 
     /**
      * Uploads a file to S3/MinIO at the specified key.

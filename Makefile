@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 .PHONY: all build test run run-dev run-prod docker-up docker-down clean help api-docs
 
-# Help menu to guide the client on how to use this Makefile
+# Help menu to guide the user on how to use this Makefile
 help:
 	@echo "Usage:"
 	@echo "  make all            - Build, start services, and run the application"
@@ -43,11 +43,19 @@ run-prod:
 
 # 4) Start supporting services (e.g., MinIO) using docker-compose
 docker-up:
+	@echo "Checking if 'data' folder exists..."
+	@if [ ! -d "./data" ]; then \
+		echo "'data' folder not found. Creating it..."; \
+		mkdir -p ./data; \
+	else \
+		echo "'data' folder already exists."; \
+	fi
 	@echo "Setting executable permissions for init.sh..."
 	chmod +x init.sh
 	@echo "Starting supporting services using Docker Compose..."
 	docker-compose up -d
 	@echo "Services started successfully."
+
 
 # 5) Shut down supporting services
 docker-down:

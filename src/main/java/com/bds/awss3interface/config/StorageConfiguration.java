@@ -46,7 +46,7 @@ public class StorageConfiguration {
 
     /**
      * Create the S3-based implementation of StorageService.
-     *
+     * <p>
      * If you want to switch to a different strategy (e.g., local disk),
      * you can change this bean to return something else.
      */
