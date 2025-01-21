@@ -95,13 +95,26 @@ public class S3StorageService implements StorageService {
         try {
             s3Client.getObject(new GetObjectRequest(bucketName, resource.getId()), tempFile);
             logger.info("Successfully downloaded resource '{}' to '{}'", resource.getId(), tempFile.getAbsolutePath());
+        } catch (AmazonS3Exception e) {
+            if (e.getStatusCode() == 404) {
+                logger.error("File not found for resource '{}': {}", resource.getId(), e.getMessage());
+                throw new S3StorageException("File not found: " + resource.getId(), e);
+            }
+            logger.error("Error downloading file '{}': {}", resource.getId(), e.getMessage());
+            throw new S3StorageException("Error downloading file: " + e.getMessage(), e);
         } catch (SdkClientException e) {
             logger.error("Error downloading file '{}': {}", resource.getId(), e.getMessage());
             throw new S3StorageException("Error downloading file: " + e.getMessage(), e);
         }
 
+        if (!tempFile.exists() || tempFile.length() == 0) {
+            logger.error("Downloaded file '{}' is missing or empty", resource.getId());
+            throw new S3StorageException("The downloaded file is missing or empty for resource: " + resource.getId());
+        }
+
         return tempFile;
     }
+
 
     @Override
     public void uploadFile(String key, MultipartFile file) {

@@ -26,6 +26,9 @@ public class OpenAPIConfig {
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.HTTP)
                                         .scheme("basic")
-                                        .description("Basic HTTP Authentication")));
+                                        .description("Basic HTTP Authentication")
+                                        .in(SecurityScheme.In.HEADER)
+                                        .name("Authorization")));
     }
+
 }
